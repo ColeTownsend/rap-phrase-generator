@@ -1,0 +1,17 @@
+{
+  "name": "rap-phrase-generator",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "micro"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "fetch-jsonp": "^1.0.6",
+    "micro": "^7.3.2",
+    "micro-ratelimit": "^0.2.0",
+    "node-fetch": "^1.6.3",
+    "querystring": "^0.2.0",
+    "stream-snitch": "^0.0.3"
+  }
+}
