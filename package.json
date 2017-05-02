@@ -7,7 +7,6 @@
   },
   "license": "MIT",
   "dependencies": {
-    "fetch-jsonp": "^1.0.6",
     "micro": "^7.3.2",
     "micro-ratelimit": "^0.2.0",
     "node-fetch": "^1.6.3",

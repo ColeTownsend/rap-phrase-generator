@@ -5,11 +5,11 @@ const querystring = require('querystring');
 const StreamSnitch = require('stream-snitch')
 const fetch = require('node-fetch')
 
-const RESULTS_LIMIT = 5
+const RESULTS_LIMIT = 3
 
 const makeParams = (searchTerms, callback) => {
   return {
-    'format': 'jsonp',
+    'format': 'json',
     'apikey': 'b84b9332bbdc10da8d10d4f60bec25fe',
     'q_lyrics': searchTerms,
     'f_artist-id': 33091467, // limit to Kanye West?
@@ -20,49 +20,60 @@ const makeParams = (searchTerms, callback) => {
     's_track_rating': 'desc',
     'quorum_factor': 0.9, // match pretty close
     'page_size': RESULTS_LIMIT,
-    'callback': 'callback'
   }
 }
 
 const makeSongIdList = (trackList, list) => {
-  trackList.map((track) => list.push(track_id))
+  console.log(`track list: `, trackList)
+  trackList.map(track => {
+    console.log(`track id: `, track.track_id) // why doesn;t this work??
+    list.push(track.track_id)
+  })
   return list
 }
 
+
 // API request
-const searchForSongs = (searchTerms) => {
+const findSongIds = async (searchTerms) => {
   const params = makeParams(searchTerms, 'callback');
   const stringifiedParams = querystring.stringify(params)
-  console.log({stringifiedParams})
   const url = `https://api.musixmatch.com/ws/1.1/track.search?${stringifiedParams}`
-  const response = fetch(url)
-    .then(function(response) {
-      console.log(response.json())
-      return response.json()}
-    )
-    .then(json => makeSongIdList(json.message.body.track_list, []))
+  const response = await fetch(url)
+  const json = await response.json()
+  const trackListJson = await json.message.body.track_list
+  console.log(`track list json: `, trackListJson)
+  return makeSongIdList(trackListJson, [])
 }
 
 // API request
-const getLyricMatches = (trackId, searchTerms) => {
+const getLyrics = async (trackId) => {
+    const url = `https://api.musixmatch.com/ws/1.1/track.lyrics.get?format=jsonp&callback=callback&track_id=${trackId}&apikey=b84b9332bbdc10da8d10d4f60bec25fe`
+  const response = await fetch(url)
+  const json = await micro.json(response)
+  console.log(`Get lyrics: `, {json})
+  return json.message.body.lyrics.lyrics_body
+}
+
+const phraseMatches = (searchTerms, lyrics) => {
   let phraseMatches = []
-
-  const termsToArray = (searchTerms) => str.split(",").map((term)=> term.trim())
-  const termsRegexFilter = termsToArray.join('|')
+  // format the matching regex
+  let termsRegexFilter
+  const termsToRegex = (str) => str.split(",").join('|')
+  if (searchTerms.length > 1) {
+    termsRegexFilter = termsToRegex(searchTerms)
+    console.log({termsRegexFilter})
+  } else {
+    termsRegexFilter = searchTerms
+  }
   const regex = `/^.*\b(${termsRegexFilter})\b.*$/igm`
-  const url = `https://api.musixmatch.com/ws/1.1/track.lyrics.get?format=jsonp&callback=callback&track_id=${trackId}&apikey=b84b9332bbdc10da8d10d4f60bec25fe`
-  const response = fetchJsonp(url)
-  const json = micro.json(response)
-  const lyrics = json.message.body.lyrics.lyrics_body
-
+  // stream
   const snitch = new StreamSnitch(regex)
   snitch.on('match', (match) => phraseMatches.push(match[1]))
   lyrics.pipe(snitch)
-
   return phraseMatches
 }
 
-module.exports = rateLimit({window: 1000, limit: 1}, async (req, res) => {
+module.exports = rateLimit({window: 1000, limit: 5}, async (req, res) => {
   const {method} = req
   if (method === 'OPTIONS') {
     return {}
@@ -70,19 +81,30 @@ module.exports = rateLimit({window: 1000, limit: 1}, async (req, res) => {
   if (method === 'GET') {
     const queryData = url.parse(req.url, true).query
     const searchTerms = queryData.terms
-    console.log(`search terms: ${searchTerms}`)
 
     if (searchTerms) {
+      console.log({searchTerms})
       let allPhraseMatches = [];
       // search for songs that contain our terms in their lyrics
-      const songMatches = await searchForSongs(searchTerms)
-      // for each songMatch run a lyric search for our terms and push all results to array
-      await songMatches.map((trackId, searchTerms) => {
-        let matches = getLyricMatches(trackId, searchTerms)
+      const songMatches = await findSongIds(searchTerms)
+      // for each songMatch, get lyrics,
+      // then pipe lyrics thru stream search
+      // then add them to array
+      console.log({songMatches})
+      songMatches.map((trackId, searchTerms) => {
+        const lyrics = getLyrics(trackId)
+        console.log({lyrics})
+        const matches = phraseMatches(searchTerms, lyrics)
         matches.map(phrase => allPhraseMatches.push(phrase))
       })
 
-      micro.send(res, 200, {data: {phrases: allPhraseMatches}})
+      if (allPhraseMatches.length > 0) {
+        micro.send(res, 200, {data: {phrases: allPhraseMatches, terms: searchTerms}})
+      }
+      else {
+        micro.send(res, 200, {message: 'No results'})
+      }
+
     } else {
       micro.send(res, 200, {message: 'No search terms provided'})
     }
