@@ -172,10 +172,6 @@ execa@^0.6.0:
     signal-exit "^3.0.0"
     strip-eof "^1.0.0"
 
-fetch-jsonp@^1.0.6:
-  version "1.0.6"
-  resolved "https://registry.yarnpkg.com/fetch-jsonp/-/fetch-jsonp-1.0.6.tgz#8d2ae174ed14108292f025f43fa07d2078de6736"
-
 get-port@3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/get-port/-/get-port-3.1.0.tgz#ef01b18a84ca6486970ff99e54446141a73ffd3e"
@@ -279,8 +275,8 @@ lazy-req@^2.0.0:
   resolved "https://registry.yarnpkg.com/lazy-req/-/lazy-req-2.0.0.tgz#c9450a363ecdda2e6f0c70132ad4f37f8f06f2b4"
 
 lodash@^4.13.1:
-  version "4.17.4"
-  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.4.tgz#78203a4d1c328ae1d86dca6460e369b57f4055ae"
+  version "4.17.19"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.19.tgz#e48ddedbe30b3321783c5b4301fbd353bc1e4a4b"
 
 lowercase-keys@^1.0.0:
   version "1.0.0"
